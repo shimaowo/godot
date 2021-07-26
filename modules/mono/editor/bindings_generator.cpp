@@ -1453,6 +1453,8 @@ Error BindingsGenerator::_generate_cs_property(const BindingsGenerator::TypeInte
 
 	if (p_itype.is_singleton)
 		p_output.append("static ");
+	else
+		p_output.append("virtual ");
 
 	p_output.append(prop_itype->cs_type);
 	p_output.append(" ");
