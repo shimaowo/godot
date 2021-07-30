@@ -93,7 +93,7 @@ def main():
 
 def build_command_line(doClean, doNoCache, additional_args):
     # scons multicore compile; leave 2 cores free for now
-    additional_args.append("-j22")
+    additional_args.append("-j 22")
 
     command_line = "scons "
     if doClean:
