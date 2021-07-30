@@ -339,6 +339,10 @@ class CSharpLanguage : public ScriptLanguage {
 	Dictionary scripts_metadata;
 	bool scripts_metadata_invalidated;
 
+	Dictionary mod_scripts_metadata;
+
+	void _load_mod_scripts_metadata(const String &p_modName);
+
 	// For debug_break and debug_break_parse
 	int _debug_parse_err_line;
 	String _debug_parse_err_file;
@@ -390,6 +394,13 @@ public:
 		if (scripts_metadata_invalidated)
 			_load_scripts_metadata();
 		return scripts_metadata;
+	}
+
+	_FORCE_INLINE_ Dictionary get_mod_scripts_metadata(const String &p_modName) {
+		if (!mod_scripts_metadata.has(p_modName))
+			_load_mod_scripts_metadata(p_modName);
+
+		return mod_scripts_metadata[p_modName].operator Dictionary();
 	}
 
 	virtual String get_name() const;

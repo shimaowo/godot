@@ -1100,6 +1100,35 @@ void CSharpLanguage::_load_scripts_metadata() {
 	}
 }
 
+void CSharpLanguage::_load_mod_scripts_metadata(const String &p_modName) {
+	String mod_scripts_metadata_path = OS::get_singleton()->get_user_data_dir().plus_file("mods").plus_file(p_modName).plus_file("scripts_metadata.json");
+
+	if (FileAccess::exists(mod_scripts_metadata_path)) {
+		String old_json;
+
+		Error ferr = read_all_file_utf8(mod_scripts_metadata_path, old_json);
+
+		ERR_FAIL_COND(ferr != OK);
+
+		Variant old_dict_var;
+		String err_str;
+		int err_line;
+		Error json_err = JSON::parse(old_json, old_dict_var, err_str, err_line);
+		if (json_err != OK) {
+			ERR_PRINTS("Failed to parse metadata file: '" + err_str + "' (" + String::num_int64(err_line) + ").");
+			return;
+		}
+
+		mod_scripts_metadata[p_modName] = old_dict_var.operator Dictionary();
+
+		print_verbose("Successfully loaded scripts metadata for mod " + p_modName);
+	} else {
+		if (!Engine::get_singleton()->is_editor_hint()) {
+			ERR_PRINT("Missing scripts metadata file for mod " + p_modName);
+		}
+	}
+}
+
 void CSharpLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 
 	p_extensions->push_back("cs");
@@ -3180,7 +3209,39 @@ Error CSharpScript::reload(bool p_keep_state) {
 			script_class = project_assembly->get_object_derived_class(name);
 		}
 
+		// mod check
+		if (!script_class && get_path().begins_with("user://mods/"))
+		{
+			// path is user://mods/mod_name/rest/of/path.cs
+			// parts[0] is the mod name and root folder
+			// the rest is the relative path to the script, which is what should be in the metadata json
+			auto parts = get_path().right(12).split("/", false);
+			// TODO: better checks?  To even get here, the file being loaded must exist, but eg user://mods/foo.cs is an invalid configuration
+			ERR_FAIL_COND_V(parts.empty(), ERR_BUG);
+
+			String local_script_path = get_path().right(12 + parts[0].size());
+
+			const Variant *mod_metadata_var = CSharpLanguage::get_singleton()->get_mod_scripts_metadata(parts[0]).getptr(local_script_path);
+			if (mod_metadata_var)
+			{
+				Dictionary script_metadata = mod_metadata_var->operator Dictionary()["class"];
+				const Variant *namespace_ = script_metadata.getptr("namespace");
+				const Variant *class_name = script_metadata.getptr("class_name");
+				ERR_FAIL_NULL_V(namespace_, ERR_BUG);
+				ERR_FAIL_NULL_V(class_name, ERR_BUG);
+
+				GDMonoClass *klass = GDMono::get_singleton()->get_class(namespace_->operator String(), class_name->operator String());
+				if (klass && CACHED_CLASS(GodotObject)->is_assignable_from(klass)) {
+					script_class = klass;
+				}
+			}
+		}
+
 		valid = script_class != NULL;
+
+		if (!script_class) {
+			print_verbose("FAILED to find class for script " + get_path());
+		}
 
 		if (script_class) {
 #ifdef DEBUG_ENABLED
