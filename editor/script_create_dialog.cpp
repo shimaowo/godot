@@ -296,6 +296,12 @@ void ScriptCreateDialog::_create_new() {
 			return;
 		}
 		scr = scr->duplicate();
+		// HACK: just to make the path available to templates as a replacement string
+		// better would be to modify the method to take in the path, but that is more changes than I want to make
+		if (!is_built_in) {
+			String lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
+			scr->set_path(lpath);
+		}
 		ScriptServer::get_language(language_menu->get_selected())->make_template(cname_param, parent_name->get_text(), scr);
 	} else {
 		scr = ScriptServer::get_language(language_menu->get_selected())->get_template(cname_param, parent_name->get_text());

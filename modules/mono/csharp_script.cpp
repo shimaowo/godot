@@ -372,7 +372,8 @@ void CSharpLanguage::make_template(const String &p_class_name, const String &p_b
 	String base_class_name = get_base_class_name(p_base_class_name, class_name_no_spaces);
 	src = src.replace("%BASE%", base_class_name)
 				  .replace("%CLASS%", class_name_no_spaces)
-				  .replace("%TS%", _get_indentation());
+				  .replace("%TS%", _get_indentation())
+				  .replace("%PATH%", p_script->get_path());
 	p_script->set_source_code(src);
 }
 
