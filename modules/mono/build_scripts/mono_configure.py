@@ -91,6 +91,7 @@ def configure(env, env_mono):
     tools_enabled = env["tools"]
     mono_static = env["mono_static"]
     copy_mono_root = env["copy_mono_root"]
+    copy_mono_tools = env["copy_mono_tools"]
 
     mono_prefix = env["mono_prefix"]
     mono_bcl = env["mono_bcl"]
@@ -532,6 +533,11 @@ def copy_mono_shared_libs(env, mono_root, target_mono_root_dir):
         btls_dll_path = os.path.join(src_mono_bin_dir, "libmono-btls-shared.dll")
         if os.path.isfile(btls_dll_path):
             copy(btls_dll_path, target_mono_bin_dir)
+
+        # TODO: windows only for now
+        # this could be a separate call in configure(), but doing it here ensures it happens for editor and game builds
+        if (env["copy_mono_tools"]):
+            copy_mono_compile_tools(mono_root, target_mono_root_dir)
     else:
         target_mono_lib_dir = (
             get_android_out_dir(env) if platform == "android" else os.path.join(target_mono_root_dir, "lib")
@@ -564,6 +570,34 @@ def copy_mono_shared_libs(env, mono_root, target_mono_root_dir):
         for lib_file_name in lib_file_names:
             copy_if_exists(os.path.join(mono_root, "lib", lib_file_name), target_mono_lib_dir)
 
+def copy_mono_compile_tools(mono_root, target_mono_root_dir):
+    from shutil import copy
+    
+    src_mono_bin_dir = os.path.join(mono_root, "bin")
+    src_mono_lib_bin_dir = os.path.join(mono_root, "lib", "mono", "4.5")
+    target_mono_bin_dir = os.path.join(target_mono_root_dir, "bin")
+
+    # TODO: currently mcs has to run through mono.exe
+    # it would be nice if there were an easy way to avoid this
+    # but I'm not sure yet what mono.exe actually does
+    copy(
+        os.path.join(src_mono_bin_dir, "mono.exe"),
+        os.path.join(target_mono_bin_dir, "mono.exe"),
+    )
+
+    copy(
+        os.path.join(src_mono_lib_bin_dir, "mcs.exe"),
+        os.path.join(target_mono_bin_dir, "mcs.exe"),
+    )
+
+    # this is necessary for the tool executables, even if the application itself
+    # is linked statically
+    # TODO: see if there is an easy way to get around this, or statically linked
+    # versions of the tool exes
+    copy(
+        os.path.join(src_mono_bin_dir, "mono-2.0-sgen.dll"),
+        os.path.join(target_mono_bin_dir, "mono-2.0-sgen.dll"),
+    )
 
 def pkgconfig_try_find_mono_root(mono_lib_names, sharedlib_ext):
     tmpenv = Environment()

@@ -275,7 +275,7 @@ namespace GodotTools.Export
 
                 AddToAssembliesDir(assemblySrcPath);
 
-                if (File.Exists(pdbSrcPath))
+                if (isDebug && File.Exists(pdbSrcPath))
                     AddToAssembliesDir(pdbSrcPath);
             }
 

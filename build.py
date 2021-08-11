@@ -39,10 +39,15 @@ def main():
     parser.add_argument("target", choices={"editor", "game", "mono_gen"}, help="which application to build")
     parser.add_argument("-c", "--configuration", choices={"debug", "release"}, default="release", help="which build configuration to use")
     parser.add_argument("--mono", action="store_true", help="build with mono support enabled")
+    parser.add_argument("--mono-tools", action="store_true", help="include mono tools for runtime C# compilation support")
     parser.add_argument("--clean", action="store_true", help="clean the build system for the specified configuration")
     parser.add_argument("--no-cache", action="store_true", help="force scons to discard its build cache")
 
     args, pass_thru_args = parser.parse_known_args()
+
+    # force this just to simplify arguments
+    if args.mono_tools:
+        args.mono = True
 
     if args.target == "editor" or args.target == "mono_gen":
         paired_options["tools"] = True
@@ -75,11 +80,19 @@ def main():
     
     if args.mono and args.target != "mono_gen":
         paired_options["mono_glue"] = True
+        # this is just easier all around, and works around a bug where the export
+        # process does not export the shared dll and so the project is not runnable
+        # without manually copying that over
+        # This is probably entirely unnecessary for the editor itself, but also shouldn't hurt
+        paired_options["mono_static"] = True
         if args.configuration == "editor":
             # seems to be required, though docs claim otherwise
             paired_options["copy_mono_root"] = True
     elif args.target == "mono_gen":
         paired_options["mono_glue"] = False
+    
+    if args.mono_tools:
+        paired_options["copy_mono_tools"] = True
 
     # sort this for ease of checking the command line
     # other params are left as-is since they are more logically-grouped

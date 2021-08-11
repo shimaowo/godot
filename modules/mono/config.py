@@ -42,6 +42,9 @@ def configure(env):
     envvars.Add(
         BoolVariable("copy_mono_root", "Make a copy of the Mono installation directory to bundle with the editor", True)
     )
+    envvars.Add(
+        BoolVariable("copy_mono_tools", "Copy the necessary Mono tool executables to enable runtime C# compilation", False)
+    )
 
     # TODO: It would be great if this could be detected automatically instead
     envvars.Add(
