@@ -468,6 +468,10 @@ public:
 	virtual void thread_enter();
 	virtual void thread_exit();
 
+	/* GLOBAL CLASSES */
+	virtual bool handles_global_class_type(const String &p_type) const;
+	virtual String get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path) const;
+
 	// Don't use these. I'm watching you
 	virtual void *alloc_instance_binding_data(Object *p_object);
 	virtual void free_instance_binding_data(void *p_data);

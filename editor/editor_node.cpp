@@ -520,8 +520,8 @@ void EditorNode::_notification(int p_what) {
 			// Restore the original FPS cap after focusing back on the editor
 			OS::get_singleton()->set_low_processor_usage_mode_sleep_usec(int(EDITOR_GET("interface/editor/low_processor_mode_sleep_usec")));
 
-			EditorFileSystem::get_singleton()->scan_changes();
-			_scan_external_changes();
+		//	EditorFileSystem::get_singleton()->scan_changes();
+		//	_scan_external_changes();
 		} break;
 
 		case MainLoop::NOTIFICATION_WM_FOCUS_OUT: {

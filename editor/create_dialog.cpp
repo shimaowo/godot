@@ -322,6 +322,11 @@ void CreateDialog::_update_search() {
 
 		String type = I->get();
 
+		if (type == "derpthing" || type == "BackgroundImage")
+		{
+			print_verbose("foo");
+		}
+
 		if (_is_class_disabled_by_feature_profile(type)) {
 			continue;
 		}

@@ -1046,6 +1046,8 @@ void EditorFileSystem::_delete_internal_files(String p_file) {
 		da->remove(p_file + ".import");
 		memdelete(da);
 	}
+
+	_queue_update_script_classes();
 }
 
 void EditorFileSystem::_thread_func_sources(void *_userdata) {
@@ -1437,6 +1439,13 @@ void EditorFileSystem::_scan_script_classes(EditorFileSystemDirectory *p_dir) {
 				lang = ScriptServer::get_language(j)->get_name();
 			}
 		}
+
+		String scrname = files[i]->script_class_name;
+		if (files[i]->script_class_extends.empty())
+		{
+			print_verbose("breakpoint");
+		}
+
 		ScriptServer::add_global_class(files[i]->script_class_name, files[i]->script_class_extends, lang, p_dir->get_file_path(i));
 		EditorNode::get_editor_data().script_class_set_icon_path(files[i]->script_class_name, files[i]->script_class_icon_path);
 		EditorNode::get_editor_data().script_class_set_name(files[i]->file, files[i]->script_class_name);

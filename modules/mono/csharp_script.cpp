@@ -790,6 +790,33 @@ void CSharpLanguage::reload_assemblies(bool p_soft_reload) {
 		}
 	}
 
+	List<StringName> g_cls;
+	ScriptServer::get_global_class_list(&g_cls);
+	for (const List<StringName>::Element* e = g_cls.front(); e; e = e->next())
+	{
+		StringName sn = e->get();
+		if (ScriptServer::get_global_class_language(sn) == "C#"
+			&& ((String)ScriptServer::get_global_class_base(sn)).empty())
+		{
+			print_verbose("breakpoint");
+
+			String className, baseType, iconPath;
+			String path = ScriptServer::get_global_class_path(sn);
+			className = get_global_class_name(path, &baseType, &iconPath);
+
+			if (!baseType.empty())
+			{
+				ScriptServer::remove_global_class(sn);
+				ScriptServer::add_global_class(className, baseType, "C#", path);
+
+				Ref<CSharpScript> script = ResourceLoader::load(path, "CSharpScript");
+				scripts.push_back(script);
+			}
+		}
+	}
+
+
+
 	// As scripts are going to be reloaded, must proceed without locking here
 
 	scripts.sort_custom<CSharpScriptDepSort>(); // Update in inheritance dependency order
@@ -1163,6 +1190,51 @@ void CSharpLanguage::thread_exit() {
 		GDMonoUtils::detach_current_thread();
 	}
 #endif
+}
+
+bool CSharpLanguage::handles_global_class_type(const String &p_type) const {
+	return p_type == "CSharpScript";
+}
+
+String CSharpLanguage::get_global_class_name(const String &p_path, String *r_base_type, String *r_icon_path) const
+{
+	if (!p_path.empty()) {
+		Ref<CSharpScript> script = ResourceLoader::load(p_path, "CSharpScript");
+		if (script.is_valid()) {
+			if (r_base_type)
+			{
+				*r_base_type = script->get_instance_base_type();
+
+				if (r_base_type->empty())
+				{
+					GDMonoAssembly *project_assembly = GDMono::get_singleton()->get_project_assembly();
+					if (project_assembly) {
+						const Variant *script_metadata_var = get_singleton()->get_scripts_metadata().getptr(p_path);
+						if (script_metadata_var) {
+							Dictionary script_metadata = script_metadata_var->operator Dictionary()["class"];
+							const Variant *namespace_ = script_metadata.getptr("namespace");
+							const Variant *class_name = script_metadata.getptr("class_name");
+							GDMonoClass *klass = project_assembly->get_class(namespace_->operator String(), class_name->operator String());
+							if (klass)
+							{
+								*r_base_type = klass->get_parent_class()->get_name();
+							}
+						}
+					}
+					
+				}
+			}
+			if (r_icon_path)
+				*r_icon_path = String();
+			// 	*r_icon_path = script->get_script_class_icon_path();
+			return script->get_script_name();
+		}
+		if (r_base_type)
+			*r_base_type = String();
+		if (r_icon_path)
+			*r_icon_path = String();
+	}
+	return String();
 }
 
 bool CSharpLanguage::debug_break_parse(const String &p_file, int p_line, const String &p_error) {
